@@ -6,9 +6,9 @@ sheetengine.codeplex.com
 Licensed under the MIT license.
 Copyright (C) 2012 Levente Dobson
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: 
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. 
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
@@ -22,34 +22,34 @@ var sheetengine = (function() {
 
     currentSheet: -1,
     hoverSheet: -1,
-    
+
     canvas: null,
     context: null,
-    
+
     canvasCenter: {u:250,v:260},       // main canvas center
 
     viewSource: { x: -1, y: -1, z: -Math.SQRT1_2 },
-  
+
     tempCanvasSize: {w:115,h:115},     // 115x115: max extent of a 80x80 sheet. the size of the temp canvas used when background is redrawn
     backgroundColor: '#FFF',
     drawObjectContour: false,
     boundingBoxMaxsheetDistance: 150,
-  
+
     objectsintersect: false,
-  
+
     debug: false
   };
-  
+
   var startsheets = [];
   var loadedyards = {};
   var staticsheets = null;
 
-  
+
   // ===================================================================================================
   // shadows
   var shadows = {};
   sheetengine.shadows = shadows;
-  
+
   shadows.baseshadowCanvas = null;
   shadows.baseshadowContext = null;
   shadows.baseShadowCenter = {u:212,v:2*106};
@@ -59,54 +59,54 @@ var sheetengine = (function() {
   shadows.shadowAlpha = 0.3;
   shadows.shadeAlpha = 0.3;  // should be the same as shadowalpha, since a shaded sheet counts as if it was in shadow
   shadows.drawShadows = true;
-  
+
   function calculateSheetBaseShadow(sheet) {
     var s = sheet;
     // calculate centerp-p0-p1-p2 crossing with baserect
     // vector of light source
     var l = shadows.lightSource;
-    var centerp = { x: s.centerp.x, y: s.centerp.y, z: s.centerp.z }; 
-    var p0 = { x: centerp.x + s.p0.x, y: centerp.y + s.p0.y, z: centerp.z + s.p0.z }; 
-    var p1 = { x: centerp.x + s.p1.x, y: centerp.y + s.p1.y, z: centerp.z + s.p1.z }; 
-    var p2 = { x: centerp.x + s.p2.x, y: centerp.y + s.p2.y, z: centerp.z + s.p2.z }; 
+    var centerp = { x: s.centerp.x, y: s.centerp.y, z: s.centerp.z };
+    var p0 = { x: centerp.x + s.p0.x, y: centerp.y + s.p0.y, z: centerp.z + s.p0.z };
+    var p1 = { x: centerp.x + s.p1.x, y: centerp.y + s.p1.y, z: centerp.z + s.p1.z };
+    var p2 = { x: centerp.x + s.p2.x, y: centerp.y + s.p2.y, z: centerp.z + s.p2.z };
 
     var tc = centerp.z / -l.z;
     var t0 = p0.z / -l.z;
     var t1 = p1.z / -l.z;
     var t2 = p2.z / -l.z;
-    
+
     var centerpsect = { x: centerp.x + l.x*tc, y: centerp.y + l.y*tc, z: centerp.z + l.z*tc };
     var p0sect = { x: p0.x + l.x*t0 - centerpsect.x, y: p0.y + l.y*t0 - centerpsect.y, z: p0.z + l.z*t0 - centerpsect.z };
     var p1sect = { x: p1.x + l.x*t1 - centerpsect.x, y: p1.y + l.y*t1 - centerpsect.y, z: p1.z + l.z*t1 - centerpsect.z };
     var p2sect = { x: p2.x + l.x*t2 - centerpsect.x, y: p2.y + l.y*t2 - centerpsect.y, z: p2.z + l.z*t2 - centerpsect.z };
-    
+
     // calculate transformation for shadow rectangle
     s.baseShadoweData = calculateSheetDataSingle(centerpsect, p0sect, p1sect, p2sect, transforms.transformPoint, transforms.transformPointz, shadows.baseShadowCenter, s.corners);
-  
+
     s.baseShadoweData.translatex -= scene.center.u;
     s.baseShadoweData.translatey -= scene.center.v;
-  };  
+  };
   function checkDirtyShadowConstraint(prev, dirtySheets) {
     for (var i=0;i<sheetengine.sheets.length;i++) {
       var sheet = sheetengine.sheets[i];
-      
+
       // dirty sheets will surely be processed later
       if (sheet.dirty)
         continue;
-        
+
       if (sheet.hidden)
         continue;
-        
+
       // initialize sheet's flag in first phase only
       if (prev)
         sheet.shadowdirty = false;
-      else 
+      else
       {
         // if sheet has already been marked in the first phase, it's canvas will be redrawn anyway
         if (sheet.shadowdirty)
           continue;
       }
-        
+
       for (var j=0;j<sheet.polygons.length; j++) {
         var sheetpoly = sheet.polygons[j];
         var shadowconstraints = prev ? sheetpoly.prevshadowconstraints : sheetpoly.shadowconstraints;
@@ -132,22 +132,22 @@ var sheetengine = (function() {
 
     // clear baserectshadow canvases
     ctx.clearRect(0,0,size.w,size.h);
-    
+
     // draw sheet shadows cast on baserect to baserectcanvases
     for (var i=0;i<sheetengine.sheets.length;i++) {
       var s = sheetengine.sheets[i];
       if (s.hidden)
         continue;
-  
+
     if (!s.castshadows)
       continue;
-    
+
       if (viewport) {
         var sheetdata = s.data;
         if (sheetdata.centerpuv.u < viewport.minu || sheetdata.centerpuv.u > viewport.maxu || sheetdata.centerpuv.v < viewport.minv || sheetdata.centerpuv.v > viewport.maxv)
           continue;
       }
-    
+
       s.baseShadoweData.translatex += rel.u;
       s.baseShadoweData.translatey += rel.v;
       drawing.drawRect(s.baseShadoweData, ctx, drawBaseShadowTexture, s.baseshadowcanvas, false);
@@ -165,43 +165,43 @@ var sheetengine = (function() {
   function drawSheetShadow(sheet) {
     if (sheet.hidden)
       return;
-      
+
     // shadow calculations for a shaded sheet can be skipped - we dont draw shadows on shaded sheets
     var drawshadows = !sheet.shaded && shadows.drawShadows && sheet.allowshadows;
-    
+
     if (drawshadows) {
       sheet.shadowtempcontext.clearRect(0, 0, sheet.width, sheet.height);
 
       sheet.shadowData = [];
-      
+
       // draw all polygon shadow to shadowcanvas with given transformation
       for (var j=0;j<sheet.polygons.length; j++) {
         var sheetpoly = sheet.polygons[j];
         var shadowconstraints = sheetpoly.shadowconstraints;
-        
+
         // go through shadowconstraints of the polygon: these will cast shadows on this polygon
         var sheetsconstraints = [];
         for (var k=0;k<shadowconstraints.length;k++) {
           var shadowcaster = sheetengine.polygons[shadowconstraints[k]].sheetindex;
-            
-          // more polygonconstraints can point to the same sheet. 
+
+          // more polygonconstraints can point to the same sheet.
           // let's check if the current shadowcaster sheet has already been processed
           if (sheetsconstraints.indexOf(shadowcaster) != -1)
             continue;
           sheetsconstraints.push(shadowcaster);
-          
+
           var shadowcastersheet = sheetengine.sheets[shadowcaster];
 
           // only visible sheets cast shadows
           if (shadowcastersheet.hidden)
             continue;
-      
+
       if (!shadowcastersheet.castshadows)
         continue;
-      
+
           // draw shadow on sheet's shadowtempcanvas
           sheet.shadowtempcontext.save();
-          
+
           // set clipping area on sheet for current polygon
           sheet.shadowtempcontext.beginPath();
           for (var pi=0;pi<sheetpoly.points.length;pi++) {
@@ -211,9 +211,9 @@ var sheetengine = (function() {
           sheet.shadowtempcontext.clip();
 
           // lazy initialize shadowdata for current sheet with respect to shadowcaster
-          if (sheet.shadowData[shadowcastersheet.index] == null) 
+          if (sheet.shadowData[shadowcastersheet.index] == null)
             sheet.shadowData[shadowcastersheet.index] = calculateShadowData(sheet, shadowcastersheet);
-          
+
           var sheetData = sheet.shadowData[shadowcastersheet.index];
           sheet.shadowtempcontext.transform(sheetData.ta,sheetData.tb,sheetData.tc,sheetData.td,sheetData.translatex,sheetData.translatey);
           sheet.shadowtempcontext.drawImage(shadowcastersheet.shadowcanvas, 0, 0);
@@ -244,7 +244,7 @@ var sheetengine = (function() {
         sheet.compositecontext.fillRect(0,0,sheet.width,sheet.height);
       }
     }
-    
+
     if (drawshadows) {
       // draw shadows cast by other sheets
       // an alpha layer is already drawn (shade), so shadow alpha should be lessened with shade alpha to avoid sum of alphas
@@ -265,13 +265,13 @@ var sheetengine = (function() {
   function calculateShadowData(sheet, shadowcaster) {
     var s = shadowcaster;
     var l = shadows.lightSource;
-    
+
     // calculate centerp-p0-p1-p2 crossing with baserect
     // vector of light source
-    var centerp = { x: s.centerp.x, y: s.centerp.y, z: s.centerp.z }; 
-    var p0 = { x: s.centerp.x + s.p0.x, y: s.centerp.y + s.p0.y, z: s.centerp.z + s.p0.z }; 
-    var p1 = { x: s.centerp.x + s.p1.x, y: s.centerp.y + s.p1.y, z: s.centerp.z + s.p1.z }; 
-    var p2 = { x: s.centerp.x + s.p2.x, y: s.centerp.y + s.p2.y, z: s.centerp.z + s.p2.z }; 
+    var centerp = { x: s.centerp.x, y: s.centerp.y, z: s.centerp.z };
+    var p0 = { x: s.centerp.x + s.p0.x, y: s.centerp.y + s.p0.y, z: s.centerp.z + s.p0.z };
+    var p1 = { x: s.centerp.x + s.p1.x, y: s.centerp.y + s.p1.y, z: s.centerp.z + s.p1.z };
+    var p2 = { x: s.centerp.x + s.p2.x, y: s.centerp.y + s.p2.y, z: s.centerp.z + s.p2.z };
 
     // n*(r-r0) = 0
     // sheet.normalp.x * (X - sheet.centerp.x) + sheet.normalp.y * (Y - sheet.centerp.y) + sheet.normalp.z * (Z - sheet.centerp.z) = 0
@@ -280,15 +280,15 @@ var sheetengine = (function() {
     var t0 = getTForSheetLineCrossing(sheet.normalp, sheet.centerp, p0, l);
     var t1 = getTForSheetLineCrossing(sheet.normalp, sheet.centerp, p1, l);
     var t2 = getTForSheetLineCrossing(sheet.normalp, sheet.centerp, p2, l);
-    
+
     var centerpsect = { x: centerp.x + l.x*tc, y: centerp.y + l.y*tc, z: centerp.z + l.z*tc };
     var p0sect = { x: p0.x + l.x*t0 - centerpsect.x, y: p0.y + l.y*t0 - centerpsect.y, z: p0.z + l.z*t0 - centerpsect.z };
     var p1sect = { x: p1.x + l.x*t1 - centerpsect.x, y: p1.y + l.y*t1 - centerpsect.y, z: p1.z + l.z*t1 - centerpsect.z };
     var p2sect = { x: p2.x + l.x*t2 - centerpsect.x, y: p2.y + l.y*t2 - centerpsect.y, z: p2.z + l.z*t2 - centerpsect.z };
-    
+
     // calculate transformation for shadow rectangle
     var eData = calculateSheetDataSingle(centerpsect, p0sect, p1sect, p2sect, transforms.transformPoint, null, sheetengine.canvasCenter, null);
-    
+
     // sheet.data inverse transform:
     var A1 = geometry.getBaseMatrixInverse({x:sheet.data.ta,y:sheet.data.tb,z:0},{x:sheet.data.tc,y:sheet.data.td,z:0},{x:sheet.data.translatex,y:sheet.data.translatey,z:1});
     var C = multiplyMatrices(A1.b1,A1.b2,A1.b3, {x:eData.ta,y:eData.tb,z:0},{x:eData.tc,y:eData.td,z:0},{x:eData.translatex,y:eData.translatey,z:1});
@@ -309,7 +309,7 @@ var sheetengine = (function() {
     var nrr0 = sheet.normalp.x * (lightPoint.x - sheet.centerp.x) + sheet.normalp.y * (lightPoint.y - sheet.centerp.y) + sheet.normalp.z * (lightPoint.z - sheet.centerp.z);
     // n*(r-r0) > 0 ? check for viewpoint
     var nrr02 = -sheet.normalp.x * (viewPoint.x - sheet.centerp.x) - sheet.normalp.y * (viewPoint.y - sheet.centerp.y) - sheet.normalp.z * (viewPoint.z - sheet.centerp.z);
-    
+
     var backToLightSource = nrr0 < 0;
     var backToViewSource = nrr02 < 0;
     return (backToLightSource && backToViewSource) || (!backToLightSource && !backToViewSource);
@@ -320,20 +320,20 @@ var sheetengine = (function() {
       sheet.shadealpha = 0;
       return;
     }
-    
+
     var l = shadows.lightSource;
     var n = sheet.normalp;
     var scale = 3;
-    
+
     // find enclosing angle between sheet normal and lightsource
     // AB*sinT = AXB -> T = arcsin ( AXB / AB )
     var axb = geometry.vectorMagnitude(crossProduct(l,n));
     var ab = geometry.vectorMagnitude(l) * geometry.vectorMagnitude(n);
     var t = Math.asin(axb/ab) / (Math.PI*scale);
-    
+
     // check if sheet is away from viewsource
     sheet.shaded = isSheetDark(sheet, sheetengine.viewSource);
-    
+
     // set sheet shade: 1 full black, 0 full original color
     sheet.shadealpha = t-0.05;
   };
@@ -345,32 +345,32 @@ var sheetengine = (function() {
     context.drawImage(shadows.baseshadowCanvas,offset.u,offset.v);
     context.restore();
   };
-  
+
   shadows.calculateSheetBaseShadow = calculateSheetBaseShadow;
   shadows.initBaseRectShadow = initBaseRectShadow;
   shadows.drawBaseRectShadow = drawBaseRectShadow;
   shadows.calculateSheetsShadows = calculateSheetsShadows;
   shadows.calculateSheetShade = calculateSheetShade;
-  
-  
+
+
   // ===================================================================================================
   // drawing functions
-  var drawing = {};  
+  var drawing = {};
   sheetengine.drawing = drawing;
 
   // callbacks
   drawing.drawBaseRect = null;
   drawing.drawBeforeSheets = null;
   drawing.drawAfterSheets = null;
-  
+
   drawing.useClipCorrection = false;
   drawing.dimmedAlpha = 0.2;      // rate at which sheets are dimmed if dimmer sheets get behind them
-  
+
   drawing.allowContourDrawing = true;
   drawing.hoveredSheetColor = '#F80';
   drawing.selectedSheetColor = '#00F';
   drawing.selectrectlinewidth = 2;
-  
+
   function createCanvas(w, h) {
     var canvas = document.createElement('canvas');
     canvas.width = w;
@@ -403,10 +403,10 @@ var sheetengine = (function() {
         drawSelectRect(sheetdata, context, 0)
       return;
     }
-  
+
     context.save();
     if (poly != null) {
-      // check if all sheet corners are included in polygon 
+      // check if all sheet corners are included in polygon
       var allcornersincluded = true;
       for (var i=0;i<4;i++) {
         var c = sheetdata.cornersuv[i];
@@ -454,7 +454,7 @@ var sheetengine = (function() {
   };
   function drawSelectRect(sheetdata, context, selected) {
     context.save();
-    
+
     context.globalAlpha = 1;
     switch (selected) {
       case 0: context.strokeStyle = '#000';
@@ -469,7 +469,7 @@ var sheetengine = (function() {
         break;
     }
     context.lineWidth = drawing.selectrectlinewidth;
-    
+
     context.beginPath();
     context.moveTo(sheetdata.cornersuv[0].u, sheetdata.cornersuv[0].v);
     context.lineTo(sheetdata.cornersuv[1].u, sheetdata.cornersuv[1].v);
@@ -491,7 +491,7 @@ var sheetengine = (function() {
     sheet.baseshadowcontext.fillStyle = '#000';
     sheet.baseshadowcontext.fillRect(0,0,sheet.width,sheet.height);
     sheet.baseshadowcontext.restore();
-    
+
     sheet.shadowcontext.save();
     sheet.shadowcontext.clearRect(0,0,sheet.width,sheet.height);
     sheet.shadowcontext.drawImage(sheet.canvas,0,0);
@@ -507,14 +507,14 @@ var sheetengine = (function() {
     var inSelection = sheet.inSelection;
     if (hovered || selected || inSelection) {
       var color = 1; // hovered
-      if (inSelection || selected) 
+      if (inSelection || selected)
         color = 2;
       drawSelectPoly(sheetData, context, color, sheet, polygon);
     }
   };
   function drawSelectPoly(sheetdata, context, color, sheet, poly) {
     context.save();
-    
+
     context.globalAlpha = 1;
     switch (color) {
       case 1: context.strokeStyle = drawing.hoveredSheetColor;
@@ -534,7 +534,7 @@ var sheetengine = (function() {
         context.lineTo(poly.data.pointsuv[next].u, poly.data.pointsuv[next].v);
       }
     }
-    
+
     context.closePath();
     context.stroke();
 
@@ -565,7 +565,7 @@ var sheetengine = (function() {
   function drawSheets(context, viewport) {
     if (sheetengine.sheets.length == 0)
       return;
-    
+
     for (var i=0; i<sheetengine.orderedPolygons.length; i++) {
       var polygon = sheetengine.polygons[sheetengine.orderedPolygons[i]];
       var sheet = sheetengine.sheets[polygon.sheetindex];
@@ -598,7 +598,7 @@ var sheetengine = (function() {
     var targetContext = options.targetContext;    // this.context
     var targetBaseShadowContext = options.targetBaseShadowContext;
     var targetBaseShadowCanvas = options.targetBaseShadowCanvas;
-  
+
     if (!targetContext) {
       targetContext = sheetengine.temppartcontext;
       targetBaseShadowContext = sheetengine.temppartshadowcontext;
@@ -608,7 +608,7 @@ var sheetengine = (function() {
     // clear canvas
     targetContext.fillStyle = sheetengine.backgroundColor;
     targetContext.fillRect(0, 0, viewPort.w, viewPort.h);
-  
+
     var u = viewPort.u + sheetengine.canvasCenter.u;
     var v = viewPort.v + sheetengine.canvasCenter.v;
 
@@ -621,7 +621,7 @@ var sheetengine = (function() {
 
     // select the region of interest
     var distance = sheetengine.boundingBoxMaxsheetDistance;
-    var minu = viewPort.u - distance; 
+    var minu = viewPort.u - distance;
     var minv = viewPort.v - distance;
     var maxu = viewPort.u + viewPort.w + distance;
     var maxv = viewPort.v + viewPort.h + distance;
@@ -636,7 +636,7 @@ var sheetengine = (function() {
 
     // draw sheets
     drawSheets(targetContext, {minu:minu, maxu:maxu, minv:minv, maxv:maxv});
-  
+
     targetContext.restore();
   };
   function drawScene(full) {
@@ -672,7 +672,7 @@ var sheetengine = (function() {
         var shadowrel = {u:scene.center.u,v:scene.center.v};
         shadows.initBaseRectShadow(shadows.baseshadowContext, {w:shadows.baseshadowCanvas.width, h:shadows.baseshadowCanvas.height}, shadowrel, null);
         drawBaseRectShadows(sheetengine.context);
-      
+
         // draw sheets
         drawing.drawSheets(sheetengine.context, null);
       }
@@ -684,14 +684,14 @@ var sheetengine = (function() {
         }
       }
     } else {
-  
+
       // update background (if any sheet's dimmed state is changed) - this also applies for not moving objects!
       for (var i=0;i<sheetengine.sheets.length;i++) {
         var s = sheetengine.sheets[i];
-      
+
         var dimmedChanged = s.dimmed != s.dimmedprev;
         s.dimmedprev = s.dimmed;
-      
+
         if (dimmedChanged) {
           // redraw background for this sheet
           // viewport will be the bounding box of the sheet
@@ -699,9 +699,9 @@ var sheetengine = (function() {
           var h = Math.ceil(s.data.vmax - s.data.vmin);
           var u = s.data.umin - sheetengine.canvasCenter.u;
           var v = s.data.vmin - sheetengine.canvasCenter.v;
-        
+
           drawScenePart({
-            viewPort: {u:u, v:v, w:w, h:h} 
+            viewPort: {u:u, v:v, w:w, h:h}
           });
           var canvas = sheetengine.backgroundcanvas ? sheetengine.backgroundcanvas : sheetengine.canvas;
           var context = sheetengine.backgroundcanvas ? sheetengine.backgroundcontext : sheetengine.context;
@@ -712,14 +712,14 @@ var sheetengine = (function() {
           context.drawImage(sheetengine.temppartcanvas,0,0,w,h,u,v,w,h);
         }
       }
-    
+
       // draw objects
       for (var i=0;i<sheetengine.objects.length;i++) {
         var obj = sheetengine.objects[i];
         obj.draw();
       }
     }
-  
+
     // position background
     if (sheetengine.backgroundcanvas) {
       sheetengine.context.clearRect(0,0,sheetengine.canvas.width,sheetengine.canvas.height);
@@ -739,7 +739,7 @@ var sheetengine = (function() {
       }, null, false);
     }
   };
-  
+
   drawing.createCanvas = createCanvas;
   drawing.redraw = redraw;
   drawing.drawRect = drawRect;
@@ -747,8 +747,8 @@ var sheetengine = (function() {
   drawing.drawSheets = drawSheets;
   drawing.getPointuv = getPointuv;
   drawing.drawScene = drawScene;
-  
-  
+
+
   // ===================================================================================================
   // sheet-intersections
   var intersections = {};
@@ -756,7 +756,7 @@ var sheetengine = (function() {
   intersections.intersections = true;
   var polygonMidpointsForOverlapCheck = [{dist:50, numpoints:4}, {dist:20, numpoints:3}, {dist:10, numpoints:2}, {dist:0, numpoints:1}];
   //var polygonMidpointsForOverlapCheck = [{dist:50, numpoints:0}];
-  
+
   function getIntersection(n,p,c1,c2) {
     // two lines: L1=P1+aV1;  L2=P2+bV2
     // (here v1=n, p1=p, v2=c2-c1, p2=c1)
@@ -766,18 +766,18 @@ var sheetengine = (function() {
     var n2 = {x: c2.x - c1.x,
         y: c2.y - c1.y,
         z: c2.z - c1.z};
-    
+
     var p2p = {x: p.x-p2.x, y:p.y-p2.y, z:p.z-p2.z};
     var cp1 = crossProduct(p2p,n);
     var cp2 = crossProduct(n2,n);
     var t = geometry.vectorMagnitude(cp1) / geometry.vectorMagnitude(cp2);
-    
+
     // check: by taking magnitudes of vectors, we lose information. t might be -t, but when?
     // cp1 is t times cp2, so the following sum should be 0. if not, t should be taken as -t
     var check = cp2.x * t + cp2.y*t + cp2.z*t - cp1.x - cp1.y - cp1.z;
     if (Math.round(check) != 0)
       t = -t;
-    
+
     return {p: {x: p2.x+t*n2.x, y: p2.y+t*n2.y, z: p2.z+t*n2.z}, inside: t>=0 && t<=1, t:t };
   };
   function pointsEqual(p1,p2) {
@@ -789,9 +789,9 @@ var sheetengine = (function() {
     // we gather all corners including intersection points, and mark intersections. from the gathered corners
     // we eliminate x-c and x-c-x patterns where a single line crosses near a corner making 3 corners -> this
     // only counts as one. in the second phase we start out from one intersection point (there should be exactly 2)
-    // to the left and to the right until we reach the second intersection -> the corners we cover will be the 
+    // to the left and to the right until we reach the second intersection -> the corners we cover will be the
     // corners of the first and second polygon.
-    
+
     // gather all corners and intersection points, mark intersections position
     var allcorners = [];
     var firstintersect = null;
@@ -808,7 +808,7 @@ var sheetengine = (function() {
       var p1 = getIntersection(n, p, corners[i], corners[j]);
       if (p1.inside) {
         var pointalreadyadded = pointsEqual(allcorners[allcorners.length-1], p1.p);
-        // add intersection if point not yet added. for x-x only x will be in array. 
+        // add intersection if point not yet added. for x-x only x will be in array.
         // (x-c-x is eliminated in two steps: first x-c is x above, and here x-x is x.
         if (!pointalreadyadded) {
           if (firstintersect == null)
@@ -830,7 +830,7 @@ var sheetengine = (function() {
     // no intersection or only one intersection: return
     if (secondintersect == null)
       return null;
-    
+
     // start from first intersection to the left till second intersection, and put all corners in poly 0
     // start from first intersection to the right till second intersection, and put all corners in poly 1
     var poly = [];
@@ -874,7 +874,7 @@ var sheetengine = (function() {
       ((a.centerp.z-b.centerp.z)*(a.centerp.z-b.centerp.z)));
     if (distance > maxdiag)
       return null;
-      
+
     var n1n2 = a.normalp.x*b.normalp.x+a.normalp.y*b.normalp.y+a.normalp.z*b.normalp.z;
     // planes parallel
     if (n1n2 == 1)
@@ -882,41 +882,41 @@ var sheetengine = (function() {
 
     var n1n1 = a.normalp.x*a.normalp.x+a.normalp.y*a.normalp.y+a.normalp.z*a.normalp.z;
     var n2n2 = b.normalp.x*b.normalp.x+b.normalp.y*b.normalp.y+b.normalp.z*b.normalp.z;
-      
+
     // calculate line vector of section line: cross product of normalvectors
-    // x-2y+2z=1, 3x-y-z=2  -> (1,-2,2)x(3,-1,-1)->(4,7,5). 
+    // x-2y+2z=1, 3x-y-z=2  -> (1,-2,2)x(3,-1,-1)->(4,7,5).
     var n = crossProduct(a.normalp, b.normalp);
-    
+
     var d1 = (a.normalp.x*a.centerp.x+a.normalp.y*a.centerp.y+a.normalp.z*a.centerp.z);
     var d2 = (b.normalp.x*b.centerp.x+b.normalp.y*b.centerp.y+b.normalp.z*b.centerp.z);
-    
+
     var det = n1n1*n2n2-n1n2*n1n2;
     var c1 = (d1*n2n2 - d2*n1n2)/det;
     var c2 = (d2*n1n1 - d1*n1n2)/det;
-    
+
     // line is c1 N1 + c2 N2 + t N1 * N2
     // -> (p) + t(n)
     var p = {x: c1*a.normalp.x + c2*b.normalp.x,
         y: c1*a.normalp.y + c2*b.normalp.y,
         z: c1*a.normalp.z + c2*b.normalp.z};
-    
+
     return {n:n, p:roundVector2digits(p, 10000)};
   };
   function doSheetsIntersect(s1, s2) {
     // calculate section of sheets
     var line = getIntersectionLineofPlanes(s1, s2);
-    
+
     // initialize intersectionparams for both sheets - these data will be used later when calculating sheet sections
     s1.intersectionParams[s2.index] = { line: line };
     s2.intersectionParams[s1.index] = { line: line };
-    
+
     if (line == null)
       return false;
-  
+
     // check if line falls inside both sheets
     var insideS1 = isInsideCornerList(s1.corners, line.n, line.p);
     var insideS2 = isInsideCornerList(s2.corners, line.n, line.p);
-    
+
     // extend intersectionParams with inside-info
     s1.intersectionParams[s2.index].insideThis = insideS1;
     s1.intersectionParams[s2.index].insideOther = insideS2;
@@ -928,26 +928,26 @@ var sheetengine = (function() {
   function calculatePolygonsForSheet(sheet, sheetset) {
     if (sheet.hidden)
       return;
-    
+
     if (!sheetset)
       sheetset = sheetengine.sheets;
-    
+
     for (var s=0;s<sheetset.length;s++) {
       var othersheet = sheetset[s];
       if (othersheet.index == sheet.index)
         continue;
-    
+
       if (othersheet.hidden)
         continue;
-      
+
       var intersectionParams = sheet.intersectionParams[othersheet.index];
-      
-      var line = intersectionParams == null ? 
+
+      var line = intersectionParams == null ?
         getIntersectionLineofPlanes(sheet, othersheet) :
         intersectionParams.line;
       if (line == null)
         continue;
-      
+
       // check if line falls inside both sheets
       var startpolygons1 = null;
       var poly1initialized = false;
@@ -970,11 +970,11 @@ var sheetengine = (function() {
       inside = intersectionParams == null ?
         isInsideCornerList(othersheet.corners, line.n, line.p) :
         intersectionParams.insideOther;
-        
+
       // other sheet falls out of line, next sheet intersection
       if (!inside)
         continue;
-      
+
       // bisect all polygons of current sheet with s
       var newpoly = [];
       for (var i=0; i<sheet.polygons.length; i++) {
@@ -1005,7 +1005,7 @@ var sheetengine = (function() {
       var poly = polygons[p];
       if (poly.points.length == 2)
         continue;
-            
+
       newpoly.push(poly);
     }
     return newpoly;
@@ -1022,7 +1022,7 @@ var sheetengine = (function() {
       currentsheet.intersectors = [];
       if (intersections.intersections)
         calculatePolygonsForSheet(currentsheet, sheetset);
-    
+
       // throw out polygons that don't count (e.g. polygons with 2 points, etc.)
       currentsheet.polygons = filterPolygons(currentsheet.polygons);
     }
@@ -1034,36 +1034,36 @@ var sheetengine = (function() {
       poly.pointscanvasuv = [];
       poly.data = { umin:umin, umax:umax, vmin:vmin, vmax:vmax, zmin:zmin, zmax:zmax, pointsuv: [] };
       poly.shData = { umin:umin, umax:umax, vmin:vmin, vmax:vmax, zmin:zmin, zmax:zmax, pointsuv: [] };
-    
+
       var avg = {u:0,v:0};
       for (var pi=0;pi<poly.points.length;pi++) {
         var polypointspi = poly.points[pi];
         // calculate polygon point in canvas uv coordinate system -> for later use at shadows
         poly.pointscanvasuv[pi] = getPointForCanvasUV(currentsheet, polypointspi);
-        
+
         // calculate transformation-specific data for polygon points
         poly.data.pointsuv[pi] = transforms.transformPointuvz(polypointspi, transforms.transformPointz, sheetengine.canvasCenter);
-        
+
         avg.u += poly.data.pointsuv[pi].u;
         avg.v += poly.data.pointsuv[pi].v;
-        
+
         // for shadow corner data: get inverse base matrix for view source plane's coordinate system (plane perpendicular to viewsource)
         // the lightsource defines a coordinate system. we will have to define the individual points in this coord system, and then Z' component can be neglected: X' and Y' will be the projected coordinates
-        
+
         var c1xyz = geometry.getCoordsInBase(shadows.shadowBaseMatrixInverse, polypointspi);
         poly.shData.pointsuv[pi] = { u: c1xyz.x, v: c1xyz.y, z: c1xyz.z };
-        
+
         updateuvzMaxMin(poly.data, pi);
         updateuvzMaxMin(poly.shData, pi);
       }
-      
+
       // store average of editor uv coords -> later used in drawing clip corrections
       avg.u /= poly.points.length;
       avg.v /= poly.points.length;
       poly.data.avguv = {u:avg.u, v:avg.v};
-      
+
       // calculate section midpoints for current poly
-      // xyz and uv midpoints have to be in sync, since intersecting rays from xyz 
+      // xyz and uv midpoints have to be in sync, since intersecting rays from xyz
       // and inbounds check for corresponding uv point is carried out for all points
       poly.midpoints = [];
       poly.data.midpointsuv = [];
@@ -1084,7 +1084,7 @@ var sheetengine = (function() {
           var ratio2 = midpoints - ratio1;
           poly.data.midpointsuv[poly.data.midpointsuv.length] = avgPointsuv(p1, p2, ratio1, ratio2, midpoints);
         }
-        
+
         // the above for shadows
         var p1 = poly.shData.pointsuv[pi];
         var p2 = poly.shData.pointsuv[pj];
@@ -1094,7 +1094,7 @@ var sheetengine = (function() {
           poly.shData.midpointsuv[poly.shData.midpointsuv.length] = avgPointsuv(p1, p2, ratio1, ratio2, midpoints);
         }
       }
-      
+
       //poly.sheet = cs;
       poly.sheetindex = currentsheet.index;
       poly.index = sheetengine.polygons.length;
@@ -1127,8 +1127,8 @@ var sheetengine = (function() {
       v: p0p.x*A1.b1.y + p0p.y*A1.b2.y + p0p.z*A1.b3.y
     };
   };
-  
-  
+
+
   // ===================================================================================================
   // z-ordering
   function calculatePolygonOrder(polygon) {
@@ -1140,7 +1140,7 @@ var sheetengine = (function() {
     //   - when a sheet is moved, let's compare it to all other sheets
     //   - for every sheet let's define, what other sheets should be drawn before this one: constraint list
     //     - ie. 0>1,3  1>2  2>3
-      
+
     // go through sheets and determine if they are in front of this one
     if (!shadow)
       polygon.constraints = [];
@@ -1149,7 +1149,7 @@ var sheetengine = (function() {
       // other polygons of the same sheet are not related to this polygon
       if (polygon2.sheetindex == polygon.sheetindex)
         continue;
-  
+
       if (sheetengine.sheets[polygon2.sheetindex].hidden || sheetengine.sheets[polygon.sheetindex].hidden)
         continue;
 
@@ -1164,17 +1164,17 @@ var sheetengine = (function() {
     var polygonData = shadow ? polygon.shData : polygon.data;
     var polygonData2 = shadow ? polygon2.shData : polygon2.data;
     var viewSource = shadow ? shadows.lightSource : sheetengine.viewSource;
-    
+
     var sheet = sheetengine.sheets[polygon.sheetindex];
     var sheet2 = sheetengine.sheets[polygon2.sheetindex];
-    
+
     if (sheet.hidden || sheet2.hidden)
       return;
-    
+
     var isfront = isPolygonFront(polygon2, polygon, sheet2, sheet, polygonData2, polygonData, viewSource, shadow);
     if (!isfront)
       return;
-      
+
     // polygon references polygon2 (front references back)
     if (!shadow) {
       polygon.constraints.push(polygon2.index);
@@ -1207,7 +1207,7 @@ var sheetengine = (function() {
         continue;
       unordered.push(i);
     }
-    
+
     for (;;) {
       // create candidate list
       var newunordered = [];
@@ -1233,7 +1233,7 @@ var sheetengine = (function() {
         else
           newunordered.push(unordered[i]);
       }
-      
+
       // move candidates to ordered list
       for (var i=0; i<candidates.length; i++) {
       var key = 'k'+candidates[i];
@@ -1243,18 +1243,18 @@ var sheetengine = (function() {
       // for (var i=0; i<candidates.length; i++) {
         // ordered[j++] = candidates[i];
       // }
-    
+
 
       var nochange = unordered.length == newunordered.length;
-      
+
       // remove candidates from unordered list
       unordered = newunordered;
-      
+
       // if unordered is fully processed - we're done
       if (unordered.length == 0)
         break;
 
-      // circular reference: if nothing changed in this iteration: 
+      // circular reference: if nothing changed in this iteration:
       // from the remaining unordered list find the polygon of highest zmax and put in the list
       if (nochange) {
         var zmax = -10000;
@@ -1272,7 +1272,7 @@ var sheetengine = (function() {
           break;
       }
     }
-  
+
     var newordered = [];
     for (var key in ordered) {
       newordered.push(ordered[key]);
@@ -1284,16 +1284,16 @@ var sheetengine = (function() {
     // 1st test: do they overlap in uv? no: return with don't care
     if (aData.umin >= bData.umax || aData.umax <= bData.umin || aData.vmin >= bData.vmax || aData.vmax <= bData.vmin)
       return false;
-    
+
     if (bData.zmin > aData.zmax)
       return false;
 
     var zOrderDistanceThreshold = 0.3;
-  
+
     // to avoid dimming of close sheets: object sheets should be only considered as dimmers if they are far enough
     if (!shadow && (asheet.objectsheet || bsheet.objectsheet) && (asheet.object != bsheet.object))
       zOrderDistanceThreshold = 5;
-    
+
     // rays from A sheet to B sheet's plane
     // test: is there at least one intersection to - direction that falls inside back rectangle -> swap
     // check c1: if tc1 < 0 and c1uv lies within bc1uv-bc4uv
@@ -1339,7 +1339,7 @@ var sheetengine = (function() {
           return true;
       }
     }
-      
+
     return false;
   };
   function clearDimmedFlags() {
@@ -1393,27 +1393,27 @@ var sheetengine = (function() {
     if (containedIdx != -1)
       constraints[containedIdx] = newIndex;
   };
-  
-  
+
+
   // ===================================================================================================
   // sheet calculations after changes
-  var calc = {};  
+  var calc = {};
   sheetengine.calc = calc;
-  
+
   function gatherDirtySheets() {
     for (var i=0;i<sheetengine.sheets.length;i++) {
       sheetengine.sheets[i].intersectionParams = [];
     }
     for (var i=0;i<sheetengine.sheets.length;i++) {
       var currentsheet = sheetengine.sheets[i];
-    
+
       if (!currentsheet.dirty)
         continue;
-      
+
       // objectsheets don't make other sheets dirty
       if (!sheetengine.objectsintersect && currentsheet.objectsheet && !currentsheet.object.intersectionsenabled)
         continue;
-      
+
       // - former intersectOR sheets
       if (currentsheet.intersectors != null) {
         for (var j=0;j<currentsheet.intersectors.length;j++) {
@@ -1421,7 +1421,7 @@ var sheetengine = (function() {
           sheetengine.sheets[idx].madedirty = true;
         }
       }
-    
+
       for (var j=0;j<sheetengine.sheets.length;j++) {
         if (j==i)
           continue;
@@ -1429,7 +1429,7 @@ var sheetengine = (function() {
         var othersheet = sheetengine.sheets[j];
         if (othersheet.hidden)
           continue;
-      
+
         // if othersheet is already made dirty, we are ready
         if (othersheet.madedirty)
           continue;
@@ -1439,12 +1439,12 @@ var sheetengine = (function() {
           continue;
         if (!sheetengine.objectsintersect && othersheet.objectsheet && !othersheet.object.intersectionsenabled)
           continue;
-        
+
         // - new intersecting sheets
         if (doSheetsIntersect(currentsheet,othersheet)) {
           othersheet.madedirty = true;
         }
-        
+
         // - former intersecTED sheets
         if (othersheet.intersectors != null) {
           if (othersheet.intersectors.indexOf(i) != -1)
@@ -1458,7 +1458,7 @@ var sheetengine = (function() {
     var dirtySheetsRedefinePolygons = [];
     for (var i=0;i<sheetengine.sheets.length;i++) {
       var sheet = sheetengine.sheets[i];
-        
+
       if (sheetengine.objectsintersect) {
         // if object intersection is allowed, simple mechanism: we only care about sheets and not objects
         if (sheet.dirty || sheet.madedirty) {
@@ -1471,13 +1471,13 @@ var sheetengine = (function() {
         var objdirty = sheet.objectsheet && (sheet.object.intersectionsredefine || sheet.object.intersectionsrecalc) && !sheet.object.intersectionsenabled;
         if (sheet.dirty || sheet.madedirty || objdirty) {
           dirtySheets.push(i);
-      
+
           var objectintersection = sheet.objectsheet && !sheet.object.intersectionsenabled;
           if (!objectintersection)
             dirtySheetsRedefinePolygons.push(i);
         }
       }
-    
+
       if (sheet.dirty) {
         movedSheets.push(i);
       }
@@ -1508,11 +1508,11 @@ var sheetengine = (function() {
       }
     }
     sheetengine.polygons = polys;
-    
+
     // update polygon indexes
     for (var j=0;j<sheetengine.polygons.length;j++) {
       if (sheetengine.polygons[j].index != j) {
-        
+
         // update z-order constraint indexes
         for (var i=0;i<sheetengine.polygons.length;i++) {
           var actPoly = sheetengine.polygons[i];
@@ -1520,7 +1520,7 @@ var sheetengine = (function() {
           updateIndexInConstraints(sheetengine.polygons[j].index, j, actPoly.shadowconstraints);
           updateIndexInConstraints(sheetengine.polygons[j].index, j, actPoly.prevshadowconstraints);
         }
-        
+
         // update index in polygonlist
         sheetengine.polygons[j].index = j;
       }
@@ -1530,7 +1530,7 @@ var sheetengine = (function() {
     for (var i=firstDirtyPolygon;i<sheetengine.polygons.length;i++) {
       var dirtyPoly = sheetengine.polygons[i];
       calculatePolygonOrder(dirtyPoly);
-      
+
       // calculate all polygons z-order constraints with respect to dirty polygons
       for (var k=0;k<firstDirtyPolygon;k++) {
         var staticPoly = sheetengine.polygons[k];
@@ -1555,7 +1555,7 @@ var sheetengine = (function() {
   function getStaticSheets() {
     if (staticsheets != null)
     return staticsheets;
-    
+
     var sheetset = [];
     for (var i=0;i<sheetengine.sheets.length;i++) {
       var s = sheetengine.sheets[i];
@@ -1567,7 +1567,7 @@ var sheetengine = (function() {
   }
   function calculateChangedSheets() {
     var start1 = +new Date;
-  
+
     // 1. gather sheets whose polygons are to be recalculated
     //    - dirty sheets
     //    - sheets that previously intersected dirty sheets
@@ -1579,30 +1579,30 @@ var sheetengine = (function() {
 
     var end1 = +new Date;
     var start2 = +new Date;
-  
+
     // redraw canvases where canvas changed
     for (var i=0;i<sheetengine.sheets.length;i++) {
       var s = sheetengine.sheets[i];
       if (s.canvasdirty)
         s.refreshCanvas();
     }
-    
+
     // gather sheets for shadow redrawing
     //    - sheets whose shadowcasters previously included a dirty sheet
     // this is done here, because the next step is to delete polygons and recalculate polygon indexes -> information for
     // dirty sheets may be lost
     checkDirtyShadowConstraint(true, movedSheets);
-    
+
     var end2 = +new Date;
     var start3 = +new Date;
-    
+
     // 2. delete polygons of dirty sheets
     deleteDirtyPolygons(dirtySheets);
     var firstDirtyPolygon = sheetengine.polygons.length;
-    
+
     var end3 = +new Date;
     var start4 = +new Date;
-  
+
     // 3. redefine polygons
     if (sheetengine.objectsintersect) {
       // redefine polygons of all sheets
@@ -1616,7 +1616,7 @@ var sheetengine = (function() {
       for (var idx=0; idx<dirtySheetsRedefinePolygons.length; idx++) {
         calculateSheetSections(sheetengine.sheets[dirtySheetsRedefinePolygons[idx]], true, sheetset);
       }
-  
+
       // recalculate/redefine polygons of object sheets
       for (var idx=0;idx<sheetengine.objects.length;idx++) {
         var obj = sheetengine.objects[idx];
@@ -1633,31 +1633,31 @@ var sheetengine = (function() {
         obj.intersectionsrecalc = false;
       }
     }
-  
+
     var end4 = +new Date;
     var start5 = +new Date;
 
     // 4. calculate z-order constraints of dirty polygons
     // and calculate all polygons' constraints with respect to dirty polygons
     calculateDirtyPolygonOrder(firstDirtyPolygon);
-    
+
     var end5 = +new Date;
     var start6 = +new Date;
-  
+
     // 5. clear dimmed flags for sheets that are not dimmed any more
     // (in 4 we did not touch the unmoved dimmers, so we can't clear flags for sheets dimmed by unmoved dimmers)
     clearDimmedFlags();
-    
+
     var end6 = +new Date;
     var start7 = +new Date;
-  
+
     // gather sheets for shadow redrawing
     //    - sheets whose shadowcasters include a dirty sheet
     checkDirtyShadowConstraint(false, movedSheets);
 
     var end7 = +new Date;
     var start8 = +new Date;
-  
+
     // set previous constraints for polygons
     setPrevShadowConstraints();
 
@@ -1666,23 +1666,23 @@ var sheetengine = (function() {
 
     // draw shadows on sheet canvases
     shadows.calculateSheetsShadows(false);
-    
+
     var end9 = +new Date;
     var start10 = +new Date;
-  
+
     updateOrderedLists();
 
     var end10 = +new Date;
-  
+
     // clear dirty flags
     for (var i=0;i<sheetengine.sheets.length;i++) {
       sheetengine.sheets[i].dirty = false;
       sheetengine.sheets[i].madedirty = false;
     }
-  
+
     // delete all sheets that were marked as deleting
     deleteSheets();
-  
+
     if (sheetengine.debug)
       console.log((end1-start1) + ' - ' + (end2-start2) + ' - ' + (end3-start3) + ' - ' + (end4-start4) + ' - ' + (end5-start5) + ' - ' + (end6-start6) + ' - ' + (end7-start7) + ' - ' + (end8-start8) + ' - ' + (end9-start9) + ' - ' + (end10-start10));
   };
@@ -1691,7 +1691,7 @@ var sheetengine = (function() {
       var s = sheetengine.sheets[i];
       s.dimmed = 0;  // clear dimmed flag for all sheets, it will be set with calculating constraints
       s.intersectionParams = [];
-    
+
     // redraw canvases where canvas changed
     if (s.canvasdirty)
       s.refreshCanvas();
@@ -1720,7 +1720,7 @@ var sheetengine = (function() {
         obj.intersectionsrecalc = false;
       }
     }
-  
+
     for (var i=0;i<sheetengine.polygons.length;i++) {
       calculatePolygonOrder(sheetengine.polygons[i]);
     }
@@ -1733,7 +1733,7 @@ var sheetengine = (function() {
       s.dirty = false;
       s.madedirty = false;
     }
-  
+
     // delete all sheets that were marked as deleting
     deleteSheets();
   };
@@ -1749,7 +1749,7 @@ var sheetengine = (function() {
       var psheet = sheetengine.sheets[poly.sheetindex];
       if (!psheet.deleting)
         newpolys.push(poly);
-      else 
+      else
         deletedpolyidxs.push(p);
     }
     sheetengine.polygons = newpolys;
@@ -1774,7 +1774,7 @@ var sheetengine = (function() {
           newconstraints.push(polyidx);
       }
       poly.constraints = newconstraints;
-    
+
       var newshadowconstraints = [];
       for (var si=0;si<poly.shadowconstraints.length;si++) {
         var polyidx = poly.shadowconstraints[si];
@@ -1782,7 +1782,7 @@ var sheetengine = (function() {
           newshadowconstraints.push(polyidx);
       }
       poly.shadowconstraints = newshadowconstraints;
-    
+
       var newshadowconstraints = [];
       for (var si=0;si<poly.prevshadowconstraints.length;si++) {
         var polyidx = poly.prevshadowconstraints[si];
@@ -1791,7 +1791,7 @@ var sheetengine = (function() {
       }
       poly.prevshadowconstraints = newshadowconstraints;
     }
-    
+
     // remove deleted sheets from sheetengine.sheets
     var newsheets = [];
     var deletedsheetidxs = [];
@@ -1799,7 +1799,7 @@ var sheetengine = (function() {
       var sheet = sheetengine.sheets[s];
       if (!sheet.deleting)
         newsheets.push(sheet);
-      else 
+      else
         deletedsheetidxs.push(s);
     }
     sheetengine.sheets = newsheets;
@@ -1817,7 +1817,7 @@ var sheetengine = (function() {
       }
       sheet.intersectors = newintersectors;
     }
-  
+
     // adjust sheet indexes
     for (var i=0;i<sheetengine.sheets.length;i++) {
       var oldindex = sheetengine.sheets[i].index;
@@ -1837,14 +1837,14 @@ var sheetengine = (function() {
         }
       }
     }
-  
+
     // update polygon indexes
     for (var j=0;j<sheetengine.polygons.length;j++) {
       var oldindex = sheetengine.polygons[j].index;
       if (oldindex != j) {
         // adjust indexes in orderedPolygons
         updateIndexInConstraints(oldindex, j, sheetengine.orderedPolygons);
-    
+
         // update z-order constraint indexes
         for (var i=0;i<sheetengine.polygons.length;i++) {
           var actPoly = sheetengine.polygons[i];
@@ -1852,7 +1852,7 @@ var sheetengine = (function() {
           updateIndexInConstraints(oldindex, j, actPoly.shadowconstraints);
           updateIndexInConstraints(oldindex, j, actPoly.prevshadowconstraints);
         }
-        
+
         // update index in polygonlist
         sheetengine.polygons[j].index = j;
       }
@@ -1866,13 +1866,13 @@ var sheetengine = (function() {
     if (idx != -1)
       sheetengine.objects.splice(idx,1);
   };
-  
+
   // sheet calculations
   calc.allowLimitToCorners = false;
   calc.sheetLimits = { xmin: -150, xmax: 150, ymin: -150, ymax: 150, zmin: 0, zmax: 100 };
-  
+
   var inboundsCheckZeroThresh = 0.001;  // calculated area might be very close to zero for small polygons. in this case it should be counted as zero.
-  
+
   function checkInboundsPolygon(corners, myx, myy) {
     var areas = [];
     var allpositive = true;
@@ -1908,13 +1908,13 @@ var sheetengine = (function() {
     // corners
     calcUdifVdif(sheet);
     sheet.corners = calculateCornersFromCenter(centerp,sheet.udif,sheet.vdif);
-    
+
     // inverse basematrix
     sheet.A1 = geometry.getBaseMatrixInverse(sheet.p1, sheet.p2, sheet.normalp);
-    
+
     // transformation-specific data
     sheet.data = calculateSheetDataSingle(centerp, p0, p1, p2, transforms.transformPoint, transforms.transformPointz, sheetengine.canvasCenter, sheet.corners);
-    
+
     // calculate shadows cast on baserect
     if (shadows.drawShadows)
       shadows.calculateSheetBaseShadow(sheet);
@@ -1925,37 +1925,37 @@ var sheetengine = (function() {
   function calculateSheetDataSingle(centerp, p0rot, p1rot, p2rot, transformFunction, transformFunctionz, canvasCenter, corners) {
     // we calculate the new position of the center
     var centerpuv = transformFunction(centerp);
-    
+
     // from the angles we calculate 3 cornerpoints of the sheet: p0 is top left
     var p0rotScale = { x: p0rot.x, y: p0rot.y, z: p0rot.z };
     var p1rotScale = { x: p1rot.x, y: p1rot.y, z: p1rot.z };
     var p2rotScale = { x: p2rot.x, y: p2rot.y, z: p2rot.z };
-    
+
     var p0 = transformFunction(p0rotScale);
     var p1 = transformFunction(p1rotScale);
     var p2 = transformFunction(p2rotScale);
-    
+
     // p1 and p2 are the cornerpoints of the square, so that 0,0 is lower left, p1 is lower right and p2 is upper left point
     // p1 and p2 will define the transformation with respect to 0,0, and the whole thing should be translated to p0
-    
+
     var translatex = canvasCenter.u + p0.u + centerpuv.u;
     var translatey = canvasCenter.v + p0.v + centerpuv.v;
-    
+
     var ta = p1.u;
     var tb = p1.v;
     var tc = p2.u;
     var td = p2.v;
-    
+
     if (corners == null)
       return { p0uv: p0, p1uv: p1, p2uv: p2, translatex: translatex, translatey: translatey, ta: ta, tb: tb, tc: tc, td: td, centerpuv: centerpuv};
-      
+
     // cornerpoints
     var c = [];
     c[0] = transforms.transformPointuvz(corners[0], transformFunctionz, canvasCenter);
     c[1] = transforms.transformPointuvz(corners[1], transformFunctionz, canvasCenter);
     c[2] = transforms.transformPointuvz(corners[2], transformFunctionz, canvasCenter);
     c[3] = transforms.transformPointuvz(corners[3], transformFunctionz, canvasCenter);
-    
+
     var umax = Math.max(c[0].u, c[1].u, c[2].u, c[3].u);
     var umin = Math.min(c[0].u, c[1].u, c[2].u, c[3].u);
     var vmax = Math.max(c[0].v, c[1].v, c[2].v, c[3].v);
@@ -1975,10 +1975,10 @@ var sheetengine = (function() {
   function limitToCorners(sheet) {
     calcUdifVdif(sheet);
     sheet.corners = calculateCornersFromCenter(sheet.centerp,sheet.udif,sheet.vdif);
-    
+
     if (!calc.allowLimitToCorners)
       return;
-    
+
     sheet.xsnap = sheet.ysnap = sheet.zsnap = sheet.xexactsnap = sheet.yexactsnap = sheet.zexactsnap = sheet.xminsnap = sheet.xmaxsnap = sheet.yminsnap = sheet.ymaxsnap = sheet.zminsnap = sheet.zmaxsnap = false;
     for (var l=0;l<4;l++) {
       limitToCorner(sheet, sheet.corners[l], l);
@@ -1987,7 +1987,7 @@ var sheetengine = (function() {
   function limitToCorner(sheet, c, index) {
     var udif = sheet.udif;
     var vdif = sheet.vdif;
-    
+
     if (c.x <= calc.sheetLimits.xmin) {
       // !sheet.xsnap: if xsnap is true it means that a previous corner has been recorrected previously
       // this previous recorrection may result in this corner to be located exactly at limit
@@ -2018,7 +2018,7 @@ var sheetengine = (function() {
       c.y = calc.sheetLimits.ymax;
       sheet.ysnap = true;
       sheet.ymaxsnap = true;
-    }    
+    }
     if (c.z <= calc.sheetLimits.zmin) {
       if (c.z == calc.sheetLimits.zmin && !sheet.zsnap)
         sheet.zexactsnap = true;
@@ -2032,8 +2032,8 @@ var sheetengine = (function() {
       c.z = calc.sheetLimits.zmax;
       sheet.zsnap = true;
       sheet.zmaxsnap = true;
-    }    
-    
+    }
+
     // calculate center from corner
     if (index == 0)
       sheet.centerp = { x: c.x + udif.x + vdif.x, y: c.y + udif.y + vdif.y, z: c.z + udif.z + vdif.z };
@@ -2043,57 +2043,57 @@ var sheetengine = (function() {
       sheet.centerp = { x: c.x - udif.x - vdif.x, y: c.y - udif.y - vdif.y, z: c.z - udif.z - vdif.z };
     if (index == 3)
       sheet.centerp = { x: c.x + udif.x - vdif.x, y: c.y + udif.y - vdif.y, z: c.z + udif.z - vdif.z };
-      
+
     // recalculate all corners from center
     sheet.corners = calculateCornersFromCenter(sheet.centerp,udif,vdif);
   };
   function defineSheetParams(sheet) {
-    // p0orig: p0 in the initial default orientation. 
+    // p0orig: p0 in the initial default orientation.
     // p0start: p0 in the initial orientation after first rotated with the given angles
     sheet.p0orig = {x:-sheet.width/2,y:0,z:sheet.height/2};
     sheet.p1orig = {x:1,y:0,z:0};
     sheet.p2orig = {x:0,y:0,z:-1};
     sheet.normalporig = {x:0,y:1,z:0};
-    
+
     // if sheet is an objectsheet, p0,p1,p2,normalp will be calculated with the rotation of the object and not from sheet rot params
     if (!sheet.objectsheet) {
       alpha = sheet.rot.alphaD * Math.PI / 180;
       beta = sheet.rot.betaD * Math.PI / 180;
       gamma = sheet.rot.gammaD * Math.PI / 180;
-      
+
       sheet.p0 = sheet.p0start = geometry.rotatePoint(sheet.p0orig,alpha,beta,gamma);
       sheet.p1 = sheet.p1start = geometry.rotatePoint(sheet.p1orig,alpha,beta,gamma);
       sheet.p2 = sheet.p2start = geometry.rotatePoint(sheet.p2orig,alpha,beta,gamma);
       sheet.normalp = sheet.normalpstart = geometry.rotatePoint(sheet.normalporig,alpha,beta,gamma);
     }
-    
+
     // set maxdiagonal for intersection check
     sheet.maxdiag = Math.ceil(Math.sqrt(sheet.width*sheet.width+sheet.height*sheet.height) / 2);
   };
-  
+
   calc.checkInboundsPolygon = checkInboundsPolygon;
   calc.calculateSheetData = calculateSheetData;
   calc.limitToCorners = limitToCorners;
   calc.defineSheetParams = defineSheetParams;
   calc.calculateChangedSheets = calculateChangedSheets;
-  calc.calculateAllSheets = calculateAllSheets;  
-  
-  
+  calc.calculateAllSheets = calculateAllSheets;
+
+
   // ===================================================================================================
   // scene functions
   var scene = {};
   sheetengine.scene = scene;
-  
+
   scene.yardcenterstart = {yardx:0, yardy:0}; // defines the initial center position (defines which yard is displayed in the center)
   scene.yardcenter = {yardx:0, yardy:0};     // defines the current center position.
   scene.center = {x:0, y:0, u:0, v:0};    // center of the drawn scene
   scene.tilewidth = 300;
   scene.tilesize = { x: 212, y: 106 };
-  
-  
+
+
   function init(canvasElement, backgroundSize) {
     drawing.allowContourDrawing = false;
-  
+
     sheetengine.sheets = [];
     sheetengine.basesheets = [];
     sheetengine.polygons = [];
@@ -2101,13 +2101,13 @@ var sheetengine = (function() {
     startsheets = [];
     loadedyards = {};
     staticsheets = null;
-  
+
     sheetengine.canvas = canvasElement;
     sheetengine.context = sheetengine.canvas.getContext('2d');
     sheetengine.canvasCenter = {u:sheetengine.canvas.width/2,v:sheetengine.canvas.height/2}; // main canvas center
-  
+
     shadows.baseshadowCanvas = drawing.createCanvas(sheetengine.canvas.width, sheetengine.canvas.height);
-  
+
     if (backgroundSize) {
       shadows.baseshadowCanvas.width = backgroundSize.w;
       shadows.baseshadowCanvas.height = backgroundSize.h;
@@ -2126,11 +2126,11 @@ var sheetengine = (function() {
   function addYards(yards, callback) {
     var newsheets = [];
     var newobjects = [];
-    
+
     if (yards) {
       for (var i=0;i<yards.length;i++) {
         var yard = yards[i];
-          
+
         var offset = { x: (yard.x - scene.yardcenterstart.yardx)*scene.tilewidth, y: (yard.y - scene.yardcenterstart.yardy)*scene.tilewidth, z: 0 };
 
         var basesheet = new sheetengine.BaseSheet(offset, {alphaD:-90, betaD:0, gammaD:0}, {w:scene.tilewidth, h:scene.tilewidth});
@@ -2143,7 +2143,7 @@ var sheetengine = (function() {
         } else {
           sheets = [];
         }
-        
+
         var objects = yard.objects;
         var yardObjects = [];
         if (objects) {
@@ -2161,19 +2161,19 @@ var sheetengine = (function() {
             newsheets = newsheets.concat(createdObj.sheets);
           }
         }
-        
+
         var newyard = {sheets: sheets, basesheet: basesheet, x:yard.x, y:yard.y, objects: yardObjects};
         var key = 'x'+yard.x+'y'+yard.y;
         loadedyards[key] = newyard;
       }
     }
-    
+
     startsheets = newsheets;
     if (newsheets.length == 0) {
       callback([], []);
       return;
     }
-    
+
     // draw images on canvases
     sheetengine.imgCount = 0;
     for (var i=0;i<newsheets.length;i++) {
@@ -2186,14 +2186,14 @@ var sheetengine = (function() {
   };
   function createSheets(sheetdata, offset) {
     var sheets = [];
-    if (sheetdata == null) 
+    if (sheetdata == null)
       return sheets;
-      
+
     for (var i=0;i<sheetdata.length;i++) {
       var data = sheetdata[i];
       var sheet = new sheetengine.Sheet(
-        geometry.addPoint(data.centerp, offset), 
-        data.rot, 
+        geometry.addPoint(data.centerp, offset),
+        data.rot,
         {w:data.width, h:data.height}
       );
       sheet.canvasdata = data.canvas;
@@ -2224,27 +2224,27 @@ var sheetengine = (function() {
   };
   function initScene(centerp) {
     calc.calculateAllSheets();
-    
+
     var centerpuv = transforms.transformPoint(centerp);
     scene.center = {x:centerp.x, y:centerp.y, u:centerpuv.u, v:centerpuv.v};
-    
+
     moveBaseShadows(scene.center);
   };
   function moveCenter(vectorxyz, vectoruv) {
     if (!vectoruv) {
       if (!vectorxyz.z)
         vectoruv = transforms.transformPoint({x:vectorxyz.x, y:vectorxyz.y, z:0});
-      else 
+      else
         vectoruv = transforms.transformPointz(vectorxyz);
     }
     if (!vectorxyz)
       vectorxyz = inverseTransformPointSimple(vectoruv);
-    
+
     scene.center.x += vectorxyz.x;
     scene.center.y += vectorxyz.y;
     scene.center.u += vectoruv.u;
     scene.center.v += vectoruv.v;
-    
+
     // move static sheets baseshadow
     moveBaseShadows(vectoruv);
   };
@@ -2252,18 +2252,18 @@ var sheetengine = (function() {
     if (!vectoruv) {
       if (!vectorxyz.z)
         vectoruv = transforms.transformPoint({x:vectorxyz.x, y:vectorxyz.y, z:0});
-      else 
+      else
         vectoruv = transforms.transformPointz(vectorxyz);
     }
     if (!vectorxyz)
       vectorxyz = inverseTransformPointSimple(vectoruv);
-      
+
     scene.center.x = vectorxyz.x;
     scene.center.y = vectorxyz.y;
     var diff = {u:vectoruv.u - scene.center.u, v: vectoruv.v - scene.center.v };
     scene.center.u = vectoruv.u;
     scene.center.v = vectoruv.v;
-    
+
     // move static sheets baseshadow
     moveBaseShadows(diff);
   };
@@ -2273,7 +2273,7 @@ var sheetengine = (function() {
     var r = /([^&=]+)=?([^&]*)/g;
     var d = function (s) { return decodeURIComponent(s.replace(a, " ")); };
     var q = window.location.search.substring(1);
-    
+
     var urlParams = {};
     while (e = r.exec(q))
       urlParams[d(e[1])] = d(e[2]);
@@ -2316,10 +2316,10 @@ var sheetengine = (function() {
     var oldcenter = scene.yardcenter;
     scene.yardcenter = {yardx:center.yardx, yardy:center.yardy};
     var newcenter = scene.yardcenter;
-  
+
     var oldc = {x1:oldcenter.yardx-levelsize,x2:oldcenter.yardx+levelsize,y1:oldcenter.yardy-levelsize,y2:oldcenter.yardy+levelsize};
     var newc = {x1:newcenter.yardx-levelsize,x2:newcenter.yardx+levelsize,y1:newcenter.yardy-levelsize,y2:newcenter.yardy+levelsize};
-    
+
     // yards to remove
     var yardsToRemove = [];
     for (var x=oldc.x1;x<=oldc.x2;x++) {
@@ -2329,7 +2329,7 @@ var sheetengine = (function() {
           yardsToRemove.push({x:x,y:y});
       }
     }
-    
+
     // yards to add
     var yardsToAdd = [];
     for (var x=newc.x1;x<=newc.x2;x++) {
@@ -2339,8 +2339,8 @@ var sheetengine = (function() {
           yardsToAdd.push({x:x,y:y});
       }
     }
-    
-  
+
+
     var yardsStr = '';
     for (var i=0;i<yardsToAdd.length;i++) {
       yardsStr += yardsToAdd[i].x+','+yardsToAdd[i].y;
@@ -2352,7 +2352,7 @@ var sheetengine = (function() {
       var oldcenter2 = {x:oldcenter.yardx*scene.tilewidth, y:oldcenter.yardy*scene.tilewidth, z:0};
       var newcenter2 = {x:newcenter.yardx*scene.tilewidth, y:newcenter.yardy*scene.tilewidth, z:0};
       scene.translateBackground(oldcenter2, newcenter2);
-  
+
       if (yardsAndObjects) {
         addYards(yardsAndObjects.yards, function(newsheets, newobjects) {
           var removedsheets = {sheets:[]};
@@ -2377,25 +2377,25 @@ var sheetengine = (function() {
       // if (idx != -1)
         // sheetengine.sheets.splice(idx,1);
     }
-    
+
     // remove basesheet
     var bidx = sheetengine.basesheets.indexOf(yard.basesheet);
     if (bidx != -1)
       sheetengine.basesheets.splice(bidx,1);
-      
+
     // remove yard objects
     for (var o=0;o<yard.objects.length;o++) {
       var obj = yard.objects[o];
       var idx = sheetengine.objects.indexOf(obj);
       if (idx != -1)
         sheetengine.objects.splice(idx,1);
-      
+
       obj.destroy();
     }
-  
+
     // remove yard
     delete loadedyards['x'+yard.x+'y'+yard.y];
-  
+
     // adjust sheet indexes
     for (var i=0;i<sheetengine.sheets.length;i++) {
       sheetengine.sheets[i].index = i;
@@ -2435,11 +2435,11 @@ var sheetengine = (function() {
     shadows.baseshadowContext.translate(-transu,-transv);
     sheetengine.backgroundtranslate.u += transu;
     sheetengine.backgroundtranslate.v += transv;
-  
+
     sheetengine.backgroundcontext.clearRect(sheetengine.backgroundtranslate.u,sheetengine.backgroundtranslate.v,sheetengine.backgroundcanvas.width,sheetengine.backgroundcanvas.height);
     shadows.baseshadowContext.clearRect(sheetengine.backgroundtranslate.u,sheetengine.backgroundtranslate.v,sheetengine.backgroundcanvas.width,sheetengine.backgroundcanvas.height);
   };
-  
+
   scene.init = init;
   scene.initScene = initScene;
   scene.moveCenter = moveCenter;
@@ -2450,12 +2450,12 @@ var sheetengine = (function() {
   scene.getNewYards = getNewYards;
   scene.getYardFromPos = getYardFromPos;
   scene.translateBackground = translateBackground;
-  
+
   // ===================================================================================================
   // geometry helper functions
   var geometry = {};
   sheetengine.geometry = geometry;
-  
+
   function getBaseMatrixInverse(u,v,w) {
     // | u.x v.x w.x |-1             | w.z*v.y-v.z*w.y v.z*w.x-w.z*v.x w.y*v.x-v.y*w.x |
     // | u.y v.y w.y |    =  1/DET * | u.z*w.y-w.z*u.y w.z*u.x-u.z*w.x u.y*w.x-w.y*u.x |
@@ -2499,7 +2499,7 @@ var sheetengine = (function() {
     return {x:x, y:y, z:z};
   };
   function getPointInBase(p, p1, p2, normalp) {
-    return { 
+    return {
       x: p.x*p1.x + p.y*p2.x + p.z*normalp.x,
       y: p.x*p1.y + p.y*p2.y + p.z*normalp.y,
       z: p.x*p1.z + p.y*p2.z + p.z*normalp.z };
@@ -2545,7 +2545,7 @@ var sheetengine = (function() {
     var alpha = 0;
     var beta = 0;
     var gamma = 0;
-    
+
     nz = p1.x;
     ny = p1.y;
     nx = p1.z;
@@ -2555,7 +2555,7 @@ var sheetengine = (function() {
     mz = normalp.x;
     my = normalp.y;
     mx = normalp.z;
-    
+
     if (ly == 0 && lx == 0) {
       if (lz == 1) {
         beta = -Math.PI/2;
@@ -2578,7 +2578,7 @@ var sheetengine = (function() {
     alpha = alpha + Math.PI;
     beta = -beta;
     gamma = gamma + Math.PI;
-    
+
     if (alpha == 2 * Math.PI)
       alpha = 0;
     if (gamma == 2 * Math.PI)
@@ -2591,7 +2591,7 @@ var sheetengine = (function() {
     var alphaD = Math.round(180/Math.PI * alpha);
     var betaD = Math.round(180/Math.PI * beta);
     var gammaD = Math.round(180/Math.PI * gamma);
-    
+
     return { alpha: alpha, beta: beta, gamma: gamma, alphaD: alphaD, betaD: betaD, gammaD: gammaD };
   };
   function rotateAroundAxis(p, t, phi) {
@@ -2599,13 +2599,13 @@ var sheetengine = (function() {
     var sphi = Math.sin(phi);
     var tp = p.x*t.x + p.y*t.y + p.z*t.z;
     var txp = { x: t.y*p.z - p.y*t.z , y: - t.x*p.z + p.x*t.z , z: t.x*p.y - p.x*t.y };
-    
+
     prot = {
       x: p.x*cphi + txp.x*sphi + t.x*(tp)*(1-cphi),
       y: p.y*cphi + txp.y*sphi + t.y*(tp)*(1-cphi),
       z: p.z*cphi + txp.z*sphi + t.z*(tp)*(1-cphi)
     };
-    
+
     return prot;
   };
   function rotateAroundArbitraryAxis(p, tp, tv, phi) {
@@ -2618,9 +2618,9 @@ var sheetengine = (function() {
     var rottemp = geometry.rotateAroundArbitraryAxis(temp, tp, tv, phi);
     return { x: rottemp.x-newcenter.x, y: rottemp.y-newcenter.y, z: rottemp.z-newcenter.z };
   };
-  
+
   geometry.getBaseMatrixInverse = getBaseMatrixInverse;
-  geometry.vectorMagnitude = vectorMagnitude; 
+  geometry.vectorMagnitude = vectorMagnitude;
   geometry.getCoordsInBase = getCoordsInBase;
   geometry.getPointInBase = getPointInBase;
   geometry.addPoint = addPoint;
@@ -2633,16 +2633,16 @@ var sheetengine = (function() {
   geometry.rotateAroundAxis = rotateAroundAxis;
   geometry.rotateAroundArbitraryAxis = rotateAroundArbitraryAxis;
   geometry.rotateAroundArbitraryAxisp = rotateAroundArbitraryAxisp;
-  
-  
+
+
   // ===================================================================================================
   // transform functions
   var transforms = {};
   sheetengine.transforms = transforms;
-  
+
   var su = Math.SQRT1_2;
   var sv = Math.SQRT1_2 / 2;
-  
+
   function transformPoint(p) {
     var u = (p.x - p.y) * su;
     var v = (p.x + p.y) * sv  - p.z;
@@ -2665,7 +2665,7 @@ var sheetengine = (function() {
   function inverseTransformPoint(p) {
     var su = Math.SQRT1_2;
     var sv = su / 2;
-    
+
     var x = ((p.u - sheetengine.canvasCenter.u)/su + (p.v - sheetengine.canvasCenter.v)/sv) / 2;
     var y = (p.v - sheetengine.canvasCenter.v)/sv - x;
     return { x:Math.floor(x), y:Math.floor(y), z:null };
@@ -2673,31 +2673,31 @@ var sheetengine = (function() {
   function inverseTransformPointSimple(p) {
     var su = Math.SQRT1_2;
     var sv = su / 2;
-    
+
     var x = ((p.u)/su + (p.v)/sv) / 2;
     var y = (p.v)/sv - x;
     return { x:x, y:y, z:null };
   };
-  
+
   transforms.transformPoint = transformPoint;
   transforms.transformPointz = transformPointz;
   transforms.transformPointuv = transformPointuv;
   transforms.transformPointuvz = transformPointuvz;
   transforms.inverseTransformPoint = inverseTransformPoint;
-  
-  
+
+
   // ===================================================================================================
   // object helpers
   var objhelpers = {};
   sheetengine.objhelpers = objhelpers;
-  
+
   function drawObjectToScene(obj, centerpuv) {
     var u = Math.floor(centerpuv.u - obj.canvasSize.relu);
     var v = Math.floor(centerpuv.v - obj.canvasSize.relv);
     var w = obj.canvasSize.w;
     var h = obj.canvasSize.h;
     drawScenePart({
-      viewPort: {u:u, v:v, w:w, h:h} 
+      viewPort: {u:u, v:v, w:w, h:h}
     });
     var canvas = sheetengine.backgroundcanvas ? sheetengine.backgroundcanvas : sheetengine.canvas;
     var context = sheetengine.backgroundcanvas ? sheetengine.backgroundcontext : sheetengine.context;
@@ -2729,13 +2729,13 @@ var sheetengine = (function() {
       s.canvasdata = obj.sheets[i].canvas;
       createdSheets.push(s);
     }
-  
+
     var canvasSize = obj.canvasSize;
     var createdObj = new sheetengine.SheetObject({x:0,y:0,z:0}, {alphaD:0,betaD:0,gammaD:0}, createdSheets, canvasSize, obj.intersectionsenabled);
     for (var i=0;i<createdSheets.length;i++) {
       createdSheets[i].objecttypehidden = obj.hidden;
     }
-    
+
     createdObj.name = name;    // name for identifying object type
     return createdObj;
   };
@@ -2749,7 +2749,7 @@ var sheetengine = (function() {
     var newrot = {
       alpha:rot.alpha, beta:rot.beta, gamma:rot.gamma,
       alphaD:rot.alphaD, betaD:rot.betaD, gammaD:rot.gammaD};
-      
+
     // fill radians if degrees are given
     if (typeof(newrot.alpha) === 'undefined')
       newrot.alpha = fromDegree(newrot.alphaD);
@@ -2757,7 +2757,7 @@ var sheetengine = (function() {
       newrot.beta = fromDegree(newrot.betaD);
     if (typeof(newrot.gamma) === 'undefined')
       newrot.gamma = fromDegree(newrot.gammaD);
-    
+
     // fill degrees if radians are given
     if (typeof(newrot.alphaD) === 'undefined')
       newrot.alphaD = fromRadian(newrot.alpha);
@@ -2765,7 +2765,7 @@ var sheetengine = (function() {
       newrot.betaD = fromRadian(newrot.beta);
     if (typeof(newrot.gammaD) === 'undefined')
       newrot.gammaD = fromRadian(newrot.gamma);
-    
+
     return newrot;
   };
   function calcRotVector(rot, rotvectorstart) {
@@ -2790,7 +2790,7 @@ var sheetengine = (function() {
   function getCurrentSheetsObject() {
     if (sheetengine.currentSheet == -1)
       return {name:'my object', thumbnail:'', hidden:false, canvasSize:{w:0,h:0,relu:0,relv:0}, sheets:{}};
-      
+
     var currentSheet = sheetengine.sheets[sheetengine.currentSheet];
     var group = currentSheet.group;
     var sheets = [];
@@ -2799,26 +2799,26 @@ var sheetengine = (function() {
         var s = sheetengine.sheets[i];
         if (s.group != group)
           continue;
-        
+
         sheets.push({
           centerp: s.centerp,
           rot: {alphaD:s.rot.alphaD, betaD:s.rot.betaD, gammaD:s.rot.gammaD},
-          width: s.width, 
-          height: s.height, 
+          width: s.width,
+          height: s.height,
           canvas: s.canvas.toDataURL()
         });
-      } 
+      }
     } else {
       var s = currentSheet;
       sheets.push({
         centerp: s.centerp,
         rot: {alphaD:s.rot.alphaD, betaD:s.rot.betaD, gammaD:s.rot.gammaD},
-        width: s.width, 
-        height: s.height, 
+        width: s.width,
+        height: s.height,
         canvas: s.canvas.toDataURL()
       });
     }
-  
+
     var maxdist = 0;
     for (var i=0;i<sheets.length;i++) {
       var sheet = sheets[i];
@@ -2834,7 +2834,7 @@ var sheetengine = (function() {
     var relv = Math.round(maxdist);
 
     var canvasSize = {w:w, h:h, relu:relu, relv:relv};
-  
+
     return {name:'my object', thumbnail:'', hidden:false, intersectionsenabled:true, canvasSize:canvasSize, sheets:sheets};
   };
   function getCurrentSheetsObjectStr() {
@@ -2846,7 +2846,7 @@ var sheetengine = (function() {
     for (var i=0;i<obj.sheets.length;i++) {
       calculateSheetSections(obj.sheets[i], true, obj.sheets);
     }
-  
+
     // calculate initial polygons from the redefined current polygonset
     for (var i=0;i<obj.sheets.length;i++) {
       var s = obj.sheets[i];
@@ -2869,15 +2869,15 @@ var sheetengine = (function() {
       }
     }
   };
-  
+
   objhelpers.fillRot = fillRot;
   objhelpers.defineAppObjects = defineAppObjects;
   objhelpers.defineObject = defineObject;
   objhelpers.getThumbnailString = getThumbnailString;
   objhelpers.getCurrentSheetsObject = getCurrentSheetsObject;
   objhelpers.getCurrentSheetsObjectStr = getCurrentSheetsObjectStr;
-  
-    
+
+
   // ===================================================================================================
   // BaseSheet
   sheetengine.BaseSheet = function(centerp, rot, size) {
@@ -2889,10 +2889,10 @@ var sheetengine = (function() {
     this.rot = {alphaD:rotclone.alphaD, betaD:rotclone.betaD, gammaD:rotclone.gammaD};
 
     calc.defineSheetParams(this);
-    calc.limitToCorners(this);    
+    calc.limitToCorners(this);
     calc.calculateSheetData(this);
     shadows.calculateSheetShade(this);
-  
+
     sheetengine.basesheets.push(this);
   };
   sheetengine.BaseSheet.prototype.destroy = function() {
@@ -2900,7 +2900,7 @@ var sheetengine = (function() {
     if (bidx != -1)
       sheetengine.basesheets.splice(bidx,1);
   };
-  
+
   // ===================================================================================================
   // Sheet
   sheetengine.Sheet = function(centerp, rot, size) {
@@ -2910,21 +2910,21 @@ var sheetengine = (function() {
     this.height = size.h;
     this.centerp = geometry.clonePoint(centerp);
     this.rot = {alphaD:rotclone.alphaD, betaD:rotclone.betaD, gammaD:rotclone.gammaD};
-    
+
     this.objectsheet = false;    // by default sheet is not part of an object. this is set by SheetObject constructor
     this.skipDensityMap = false;  // sheet will be added to densitymap if DensityMap.addSheet is called
     this.dimSheets = false;      // sheet will not dim other sheets
     this.dimmingDisabled = false;  // sheet will be dimmed by other sheets
     this.hidden = false;      // sheet will be drawn to main canvas and takes part in calculations
     this.dirty = false;        // indicates if sheet data needs to be recalculated (eg. after moving/rotating sheet)
-    this.canvasdirty = true;  
+    this.canvasdirty = true;
 
     this.dimmed = 0;
     this.dimmedprev = 0;
-  
+
     this.castshadows = true;
     this.allowshadows = true;
-    
+
     this.canvas = drawing.createCanvas(this.width, this.height);
     this.context = this.canvas.getContext('2d');
     this.shadowcanvas = drawing.createCanvas(this.width, this.height);
@@ -2935,12 +2935,12 @@ var sheetengine = (function() {
     this.baseshadowcontext = this.baseshadowcanvas.getContext('2d');
     this.compositecanvas = drawing.createCanvas(this.width, this.height);
     this.compositecontext = this.compositecanvas.getContext('2d');
-    
+
     calc.defineSheetParams(this);
-    calc.limitToCorners(this);    
+    calc.limitToCorners(this);
     calc.calculateSheetData(this);
     shadows.calculateSheetShade(this);
-  
+
     this.index = sheetengine.sheets.length;
     sheetengine.sheets.push(this);
     staticsheets = null;  // mark staticsheets for recollecting
@@ -2962,7 +2962,7 @@ var sheetengine = (function() {
   sheetengine.Sheet.prototype.refreshCanvas = function() {
     if (!this.canvasdirty)
     return;
-    
+
     this.compositecontext.clearRect(0, 0, this.width, this.height);
     drawing.redrawSheetCanvases(this);
     this.canvasdirty = false;
@@ -2980,7 +2980,7 @@ var sheetengine = (function() {
     this.dimmingDisabled = dimmingDisabled;
     this.dirty = true;
   };
-  
+
   // ===================================================================================================
   // SheetObject
   sheetengine.SheetObject = function(centerp, rot, sheets, canvasSize, intersectionsenabled) {
@@ -2988,15 +2988,15 @@ var sheetengine = (function() {
       var s = sheets[i];
       s.objectsheet = true;    // indicate that sheet is part of an object
       s.object = this;
-    
+
       s.startcenterp = {x:s.centerp.x,y:s.centerp.y,z:s.centerp.z};
       s.rotcenterp = {x:s.centerp.x,y:s.centerp.y,z:s.centerp.z};
       s.centerp.x += centerp.x;
       s.centerp.y += centerp.y;
       s.centerp.z += centerp.z;
-      
+
       s.intersectionParams = [];
-    
+
       calc.calculateSheetData(s);  // need to calc before setting up initial polygons
     }
 
@@ -3035,10 +3035,10 @@ var sheetengine = (function() {
     this.hidden = false;
     this.intersectionsredefine = false;
     this.intersectionsrecalc = false;
-  
+
     // object canvas size
     this.canvasSize = canvasSize;
-  
+
     // adjust temppartcanvas size if necessary
     if (canvasSize.w > sheetengine.tempCanvasSize.w || canvasSize.h > sheetengine.tempCanvasSize.h) {
       var w = Math.max(canvasSize.w, sheetengine.tempCanvasSize.w);
@@ -3049,7 +3049,7 @@ var sheetengine = (function() {
       sheetengine.temppartshadowcanvas.width = w;
       sheetengine.temppartshadowcanvas.height = h;
     }
-  
+
     // set oldcenterp for redrawing old positions
     this.oldcenterp = clonePoint(this.centerp);
 
@@ -3107,11 +3107,11 @@ var sheetengine = (function() {
       this.centerp.y += vector.y;
       this.centerp.z += vector.z;
     }
-  
+
     var diffx = this.centerp.x - this.oldcenterp.x;
     var diffy = this.centerp.y - this.oldcenterp.y;
     var diffz = this.centerp.z - this.oldcenterp.z;
-    
+
     for (var i=0;i<this.sheets.length;i++) {
       var s = this.sheets[i];
 
@@ -3120,7 +3120,7 @@ var sheetengine = (function() {
       s.centerp.z = s.rotcenterp.z + this.centerp.z;
 
       calc.calculateSheetData(s);
-    
+
       if (s.polygons && !sheetengine.objectsintersect && !this.intersectionsenabled) {
         for (var j=0;j<s.polygons.length;j++) {
           var poly = s.polygons[j];
@@ -3133,11 +3133,11 @@ var sheetengine = (function() {
         }
       }
     }
-  
+
     this.centerpuv = transforms.transformPoint(this.centerp);
     this.centerpuvrel = transforms.transformPointuvz(this.centerp, transforms.transformPointz, sheetengine.canvasCenter);
     this.oldcenterpuv = transforms.transformPoint(this.oldcenterp);
-  
+
     this.intersectionsrecalc = true;
     this.canvasdirty = true;
   };
@@ -3157,10 +3157,10 @@ var sheetengine = (function() {
     }
     // calc rot with inverserpy
     this.rot = geometry.inverseRPY(this.rotvector[0], this.rotvector[1], this.rotvector[2]);
-    
+
     for (var i=0;i<this.sheets.length;i++) {
       var s = this.sheets[i];
-      
+
       if (base) {
         s.p0 = geometry.rotateAroundAxis(s.p0start,axis,angle);
         s.p1 = geometry.rotateAroundAxis(s.p1start,axis,angle);
@@ -3187,7 +3187,7 @@ var sheetengine = (function() {
         s.p2 = geometry.rotateAroundAxis(s.p2,axis,angle);
         s.normalp = geometry.rotateAroundAxis(s.normalp,axis,angle);
         s.rotcenterp = geometry.rotateAroundAxis(s.rotcenterp,axis,angle);
-    
+
         if (s.polygons && !sheetengine.objectsintersect && !this.intersectionsenabled) {
           for (var j=0;j<s.polygons.length;j++) {
             var poly = s.polygons[j];
@@ -3208,28 +3208,28 @@ var sheetengine = (function() {
       calc.calculateSheetData(s);
       shadows.calculateSheetShade(s);
     }
-  
+
     this.intersectionsrecalc = true;
     this.canvasdirty = true;
   };
   sheetengine.SheetObject.prototype.setOrientation = function(rot) {
     this.rot = objhelpers.fillRot(rot);
     this.rotvector = calcRotVector(this.rot, this.rotvectorstart);
-    
+
     for (var i=0;i<this.sheets.length;i++) {
       var s = this.sheets[i];
-      
+
       s.p0 = geometry.rotatePoint(s.p0start, this.rot.alpha, this.rot.beta, this.rot.gamma);
       s.p1 = geometry.rotatePoint(s.p1start, this.rot.alpha, this.rot.beta, this.rot.gamma);
       s.p2 = geometry.rotatePoint(s.p2start, this.rot.alpha, this.rot.beta, this.rot.gamma);
       s.normalp = geometry.rotatePoint(s.normalpstart, this.rot.alpha, this.rot.beta, this.rot.gamma);
-      
+
       s.rotcenterp = geometry.rotatePoint(s.startcenterp, this.rot.alpha, this.rot.beta, this.rot.gamma);
 
       s.centerp.x = s.rotcenterp.x + this.centerp.x;
       s.centerp.y = s.rotcenterp.y + this.centerp.y;
       s.centerp.z = s.rotcenterp.z + this.centerp.z;
-      
+
       calc.calculateSheetData(s);
       shadows.calculateSheetShade(s);
 
@@ -3246,27 +3246,27 @@ var sheetengine = (function() {
         }
       }
     }
-  
+
     this.intersectionsrecalc = true;
     this.canvasdirty = true;
   };
   sheetengine.SheetObject.prototype.setSheetPos = function(sheet, sheetpos, sheetrot) {
     var s = sheet;
-    
+
     var sheetrot2 = objhelpers.fillRot(sheetrot);
-    
+
     //var sheetdiffp = geometry.subPoint(sheetpos, s.startcenterp);
     //var oldcenterp = s.startcenterp;
-  
+
     // set sheet position
     s.startcenterp = sheetpos;
-    
+
     // set sheet rotation relative to object
     s.p0start = geometry.rotatePoint(s.p0orig,sheetrot2.alpha,sheetrot2.beta,sheetrot2.gamma);
     s.p1start = geometry.rotatePoint(s.p1orig,sheetrot2.alpha,sheetrot2.beta,sheetrot2.gamma);
     s.p2start = geometry.rotatePoint(s.p2orig,sheetrot2.alpha,sheetrot2.beta,sheetrot2.gamma);
     s.normalpstart = geometry.rotatePoint(s.normalporig,sheetrot2.alpha,sheetrot2.beta,sheetrot2.gamma);
-    
+
     // recorrect initial polygons
     if (s.startpolygons && !sheetengine.objectsintersect && !this.intersectionsenabled) {
       var diffp = geometry.subPoint(sheetpos, s.startpolygonscenterp);
@@ -3276,13 +3276,13 @@ var sheetengine = (function() {
           var relp = startpoly.relpoints[p];
           startpoly.points[p] = geometry.getPointInBase(relp, s.p1start, s.p2start, s.normalpstart);
           startpoly.points[p] = geometry.addPoint(startpoly.points[p], diffp);
-      
+
           // startpoly.points[p] = geometry.addPoint(startpoly.points[p], sheetdiffp);
           // startpoly.relpoints[p] = geometry.addPoint(startpoly.relpoints[p], sheetdiffp);
         }
       }
     }
-  
+
     // set absolute sheet rotation and position modified with object rotation and position
     var rot = this.rot;
     s.p0 = geometry.rotatePoint(s.p0start, rot.alpha, rot.beta, rot.gamma);
@@ -3290,11 +3290,11 @@ var sheetengine = (function() {
     s.p2 = geometry.rotatePoint(s.p2start, rot.alpha, rot.beta, rot.gamma);
     s.normalp = geometry.rotatePoint(s.normalpstart, rot.alpha, rot.beta, rot.gamma);
     s.rotcenterp = geometry.rotatePoint(s.startcenterp, rot.alpha, rot.beta, rot.gamma);
-    
+
     s.centerp.x = s.rotcenterp.x + this.centerp.x;
     s.centerp.y = s.rotcenterp.y + this.centerp.y;
     s.centerp.z = s.rotcenterp.z + this.centerp.z;
-    
+
     calc.calculateSheetData(s);
     shadows.calculateSheetShade(s);
 
@@ -3311,13 +3311,13 @@ var sheetengine = (function() {
         }
       }
     }
-  
+
     this.intersectionsrecalc = true;
     this.canvasdirty = true;
   };
   sheetengine.SheetObject.prototype.rotateSheet = function(sheet, rotationCenter, rotationAxis, angle) {
     var s = sheet;
-  
+
     // recorrect initial polygons
     if (s.startpolygons && !sheetengine.objectsintersect && !this.intersectionsenabled) {
       for (var j=0;j<s.startpolygons.length;j++) {
@@ -3327,17 +3327,17 @@ var sheetengine = (function() {
         }
       }
     }
-  
+
     s.p0start = geometry.rotateAroundAxis(s.p0start,rotationAxis,angle);
     s.p1start = geometry.rotateAroundAxis(s.p1start,rotationAxis,angle);
     s.p2start = geometry.rotateAroundAxis(s.p2start,rotationAxis,angle);
     s.normalpstart = geometry.rotateAroundAxis(s.normalpstart,rotationAxis,angle);
     s.startcenterp = geometry.rotateAroundArbitraryAxis(s.startcenterp,rotationCenter,rotationAxis,angle);
-  
+
     // rotationCenter and rotationAxis are given relatively to object orientation
     rotationCenter = geometry.rotatePoint(rotationCenter, this.rot.alpha, this.rot.beta, this.rot.gamma);
     rotationAxis = geometry.rotatePoint(rotationAxis, this.rot.alpha, this.rot.beta, this.rot.gamma);
-  
+
     s.p0 = geometry.rotateAroundAxis(s.p0,rotationAxis,angle);
     s.p1 = geometry.rotateAroundAxis(s.p1,rotationAxis,angle);
     s.p2 = geometry.rotateAroundAxis(s.p2,rotationAxis,angle);
@@ -3364,7 +3364,7 @@ var sheetengine = (function() {
         }
       }
     }
-  
+
     this.intersectionsrecalc = true;
     this.canvasdirty = true;
   };
@@ -3394,12 +3394,12 @@ var sheetengine = (function() {
     var sheets = [];
     for (var i=0;i<this.sheets.length;i++) {
       var s = this.sheets[i];
-      
+
       sheets.push({
         centerp: s.centerp,
         rot: {alphaD:s.rot.alphaD, betaD:s.rot.betaD, gammaD:s.rot.gammaD},
-        width: s.width, 
-        height: s.height, 
+        width: s.width,
+        height: s.height,
         canvas: s.canvas.toDataURL()
       });
     }
@@ -3425,7 +3425,7 @@ var sheetengine = (function() {
       var w = du;
       var h = dv;
       drawScenePart({
-        viewPort: {u:u, v:v, w:w, h:h} 
+        viewPort: {u:u, v:v, w:w, h:h}
       });
       var canvas = sheetengine.backgroundcanvas ? sheetengine.backgroundcanvas : sheetengine.canvas;
       var context = sheetengine.backgroundcanvas ? sheetengine.backgroundcontext : sheetengine.context;
@@ -3434,7 +3434,7 @@ var sheetengine = (function() {
       w-=1;  // fix drawing inaccuracies
       h-=1;
       context.drawImage(sheetengine.temppartcanvas,0,0,w,h,u,v,w,h);
-    
+
       if (sheetengine.drawObjectContour) {
         context.strokeStyle = '#FFF';
         context.strokeRect(centerpuv.u-this.canvasSize.relu+canvas.width/2,centerpuv.v-this.canvasSize.relv+canvas.height/2,this.canvasSize.w,this.canvasSize.h);
@@ -3446,13 +3446,13 @@ var sheetengine = (function() {
     }
 
     this.canvasdirty = false;
-  
+
     if (this.deleting)
       deleteObject(this);
   };
-  
+
   // ===================================================================================================
-  // DensityMap  
+  // DensityMap
   sheetengine.DensityMap = function(granularity) {
     this.map = {};
     this.granularity = granularity;
@@ -3466,7 +3466,7 @@ var sheetengine = (function() {
 
     if (map['x'+x+'y'+y+'z'+z])
       return map['x'+x+'y'+y+'z'+z];
-      
+
     return 0;
   };
   sheetengine.DensityMap.prototype.put = function(p) {
@@ -3475,7 +3475,7 @@ var sheetengine = (function() {
     var x = Math.round(p.x / gran);
     var y = Math.round(p.y / gran);
     var z = Math.floor(p.z / gran);
-    
+
     this.add('x'+x+'y'+y+'z'+z);
     // make sure no empty diagonals are left
     this.add('x'+(x+1)+'y'+(y)+'z'+(z));
@@ -3489,7 +3489,7 @@ var sheetengine = (function() {
     var x = Math.round(p.x / gran);
     var y = Math.round(p.y / gran);
     var z = Math.floor(p.z / gran);
-    
+
     this.sub('x'+x+'y'+y+'z'+z);
     // make sure no empty diagonals are left
     this.sub('x'+(x+1)+'y'+(y)+'z'+(z));
@@ -3501,14 +3501,14 @@ var sheetengine = (function() {
     var map = this.map;
     if (!map[id])
       map[id] = 1;
-    else 
+    else
       map[id] = map[id] + 1;
   };
   sheetengine.DensityMap.prototype.sub = function(id) {
     var map = this.map;
     if (!map[id] || map[id] == 0)
       return;
-    else 
+    else
       map[id] = map[id] - 1;
   };
   sheetengine.DensityMap.prototype.addSheet = function(sheet) {
@@ -3532,7 +3532,7 @@ var sheetengine = (function() {
       x: (s.corners[3].x - s.corners[0].x) / grany,
       y: (s.corners[3].y - s.corners[0].y) / grany,
       z: (s.corners[3].z - s.corners[0].z) / grany };
-    
+
     var w = s.canvas.width;
     var h = s.canvas.height;
     var imgData = s.context.getImageData(0, 0, w, h).data;
@@ -3575,8 +3575,8 @@ var sheetengine = (function() {
     var allowMove = true;
     var stopFall = false;
     var targetp = {
-      x:targetPos.x + vector.x, 
-      y:targetPos.y + vector.y, 
+      x:targetPos.x + vector.x,
+      y:targetPos.y + vector.y,
       z:targetPos.z + vector.z};
     var h = this.getTargetHeight({x:targetp.x, y:targetp.y, z:targetp.z}, objHeight);
     if (h >= targetp.z) {
@@ -3589,8 +3589,8 @@ var sheetengine = (function() {
         vector.x = 0;
         vector.y = 0;
         targetp = {
-          x:targetPos.x, 
-          y:targetPos.y, 
+          x:targetPos.x,
+          y:targetPos.y,
           z:targetPos.z + vector.z};
         var h = this.getTargetHeight({x:targetp.x, y:targetp.y, z:targetp.z}, objHeight);
         if (h >= targetp.z) {
@@ -3608,10 +3608,10 @@ var sheetengine = (function() {
     return {allowMove: allowMove, targetp: targetp, movex: vector.x, movey: vector.y, stopFall: stopFall};
   };
 
-  
+
   // initialize shadow's base matrix inverse
   shadows.shadowBaseMatrixInverse = geometry.getBaseMatrixInverse(shadows.lightSourcep1, shadows.lightSourcep2, shadows.lightSource);
-  
+
   return sheetengine;
 })();
 
