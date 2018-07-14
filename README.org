@@ -1,0 +1,11 @@
+* TafelNG
+Based on archived [[https://archive.codeplex.com/?p=sheetengine][sheetengine]].
+
+Sheetenine is an HTML5 canvas based JavaScript display engine for rendering isometric scenes built up of sheets. Features include:
+- z-ordering,
+- shadows with adjustable light source,
+- sheet intersections,
+- custom textures with transparent regions,
+- custom view transformations,
+- density map for collision detection,
+- server side support for [[http://nodejs.org][node.js]] and [[https://github.com/learnboost/node-canvas][node-canvas]].
